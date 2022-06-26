@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { DiscordConfig } from './discord.config';
 import { SwaggerConfig } from './swagger.config';
 import { ValidationConfig } from './validation.config';
 
@@ -11,7 +10,6 @@ async function bootstrap() {
 
   ValidationConfig(app);
   SwaggerConfig(app);
-  DiscordConfig();
 
   await app.listen(8000);
 }

@@ -1,4 +1,4 @@
-export interface DiscordOptions {
+export class DiscordOptions {
   token: string;
   prefix: string;
 }
