@@ -1,21 +1,44 @@
 import { SetMetadata } from '@nestjs/common';
-import { DISCORD_GROUPS_METADATA_KEY } from '../discord.constantas';
+import {
+  DISCORD_TARGET_GROUPS_METADATA_KEY,
+  DISCORD_TARGET_GROUP_OPTIONS_METADATA_KEY,
+} from '../discord.constants';
 
-class GroupOptions {
+export class GroupOptions {
   name: string;
 }
-export const getGroups = (): GroupOptions[] =>
-  Reflect.getMetadata(DISCORD_GROUPS_METADATA_KEY, GroupOptions) || [];
+const getTargetGroups = (): any[] =>
+  Reflect.getMetadata(DISCORD_TARGET_GROUPS_METADATA_KEY, GroupOptions) || [];
 
-const setGroups = (groups: GroupOptions[]) =>
-  Reflect.defineMetadata(DISCORD_GROUPS_METADATA_KEY, groups, GroupOptions);
+const setTargetGroups = (targets: any[]) =>
+  Reflect.defineMetadata(
+    DISCORD_TARGET_GROUPS_METADATA_KEY,
+    targets,
+    GroupOptions,
+  );
 
-const GroupDecorator = (options: GroupOptions) => {
-  const groups = getGroups();
-  groups.push(options);
-  setGroups(groups);
-  return groups;
-};
+export const setGroupOptions = (options: GroupOptions, target: any) =>
+  Reflect.defineMetadata(
+    DISCORD_TARGET_GROUP_OPTIONS_METADATA_KEY,
+    options,
+    target,
+  );
+export const getGroupOptions = (target: any): GroupOptions =>
+  Reflect.getMetadata(DISCORD_TARGET_GROUP_OPTIONS_METADATA_KEY, target) || {};
 
-export const Group = (options: GroupOptions) =>
-  SetMetadata(DISCORD_GROUPS_METADATA_KEY, GroupDecorator(options));
+export function Group(options?: GroupOptions) {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  return function _DiscordController<T extends { new (...args: any[]): {} }>(
+    constr: T,
+  ) {
+    return class extends constr {
+      constructor(...args: any[]) {
+        super(...args);
+        const targets = getTargetGroups();
+        targets.push(this);
+        setTargetGroups(targets);
+        setGroupOptions(options, this);
+      }
+    };
+  };
+}
