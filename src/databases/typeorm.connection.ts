@@ -3,7 +3,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 export const typeormConnection = (): TypeOrmModuleOptions =>
   ({
     type: process.env.DB_DRIVE || 'postgres',
-    database: process.env.DB_DATABASE || 'beautyrpg',
+    database: process.env.DB_DATABASE || 'postgres',
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     host: process.env.DB_HOST || 'localhost',

@@ -3,11 +3,12 @@ import {
   DISCORD_TARGET_GROUPS_METADATA_KEY,
   DISCORD_TARGET_GROUP_OPTIONS_METADATA_KEY,
 } from '../discord.constants';
+import { DiscordCommandMetadataHandler } from './command.decorator';
 
 export class GroupOptions {
   name: string;
 }
-const getTargetGroups = (): any[] =>
+export const getTargetGroups = (): any[] =>
   Reflect.getMetadata(DISCORD_TARGET_GROUPS_METADATA_KEY, GroupOptions) || [];
 
 const setTargetGroups = (targets: any[]) =>
@@ -17,7 +18,7 @@ const setTargetGroups = (targets: any[]) =>
     GroupOptions,
   );
 
-export const setGroupOptions = (options: GroupOptions, target: any) =>
+const setGroupOptions = (options: GroupOptions, target: any) =>
   Reflect.defineMetadata(
     DISCORD_TARGET_GROUP_OPTIONS_METADATA_KEY,
     options,
@@ -26,6 +27,12 @@ export const setGroupOptions = (options: GroupOptions, target: any) =>
 export const getGroupOptions = (target: any): GroupOptions =>
   Reflect.getMetadata(DISCORD_TARGET_GROUP_OPTIONS_METADATA_KEY, target) || {};
 
+/**
+ * Decorator for Discord groups.
+ *
+ * Will register each instance for discord event provider
+ * @param options
+ */
 export function Group(options?: GroupOptions) {
   // eslint-disable-next-line @typescript-eslint/ban-types
   return function _DiscordController<T extends { new (...args: any[]): {} }>(
@@ -38,6 +45,12 @@ export function Group(options?: GroupOptions) {
         targets.push(this);
         setTargetGroups(targets);
         setGroupOptions(options, this);
+        console.log(targets);
+        targets.forEach((target) => {
+          const handler = new DiscordCommandMetadataHandler(target);
+          console.log(handler.getMethodKeys());
+          console.log(handler.getCommandOptions('register'));
+        });
       }
     };
   };
