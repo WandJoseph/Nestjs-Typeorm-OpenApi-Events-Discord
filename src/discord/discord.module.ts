@@ -1,6 +1,7 @@
-import { ConsoleLogger, Global, Module } from '@nestjs/common';
-import { DiscordOptions } from './discord-options.interface';
+import { Global, Module, ConsoleLogger } from '@nestjs/common';
+import { DiscordOptions } from './discord-options';
 import { DiscordEventEmitter } from './discord.event-emitter';
+
 @Global()
 @Module({
   imports: [],

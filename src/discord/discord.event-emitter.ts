@@ -11,7 +11,7 @@ import {
   GroupOptions,
 } from './decorators/group.decorator';
 import { DiscordParametersMetadataHandler } from './decorators/message.decorators';
-import { DiscordOptions } from './discord-options.interface';
+import { DiscordOptions } from './discord-options';
 
 class GroupContext {
   public readonly options: GroupOptions;
