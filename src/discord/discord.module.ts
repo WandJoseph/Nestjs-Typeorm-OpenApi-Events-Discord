@@ -1,12 +1,12 @@
-import { Global, Module } from '@nestjs/common';
+import { ConsoleLogger, Global, Module } from '@nestjs/common';
 import { DiscordOptions } from './discord-options.interface';
 import { DiscordEventEmitter } from './discord.event-emitter';
-
 @Global()
 @Module({
   imports: [],
   controllers: [],
   providers: [
+    ConsoleLogger,
     {
       provide: DiscordOptions,
       useValue: {

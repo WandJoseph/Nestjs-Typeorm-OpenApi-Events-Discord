@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ConsoleLogger, Injectable, OnModuleInit } from '@nestjs/common';
 import { Client as DiscordClient, Intents, Message } from 'discord.js';
 import {
   EntityConflictException,
@@ -10,12 +10,27 @@ import {
   getTargetGroups,
   GroupOptions,
 } from './decorators/group.decorator';
+import { DiscordParametersMetadataHandler } from './decorators/message.decorators';
 import { DiscordOptions } from './discord-options.interface';
 
 class GroupContext {
   public readonly options: GroupOptions;
   constructor(private readonly handler: DiscordCommandMetadataHandler) {
     this.options = getGroupOptions(this.handler.target);
+  }
+  handleArgs(message: Message<boolean>, method: string) {
+    const handler = new DiscordParametersMetadataHandler(this.handler.target);
+    const parameters = handler.getCommandParameters(method);
+    const args = [];
+    for (const parameter of parameters) {
+      const { type, field } = parameter;
+      let object = {};
+      if (type === 'message') {
+        object = field ? message[field] : message;
+      }
+      args.splice(parameter.index, 0, object);
+    }
+    return args;
   }
 
   get name() {
@@ -26,17 +41,37 @@ class GroupContext {
   }
 
   async execute(message: Message<boolean>) {
-    if (!message.content.startsWith(this.name + ' ')) {
-      return;
+    if (this.name) {
+      if (!message.content.startsWith(this.name + ' ')) {
+        return;
+      }
+      message.content = message.content.slice(this.name.length + 1);
     }
-    message.content = message.content.slice(this.name.length + 1);
     for (const method of this.methods) {
       const options = this.handler.getCommandOptions(method);
       const commands = [...(options.aliases || []), options.name];
       for (const command of commands) {
         if (message.content.startsWith(command)) {
           message.content = message.content.slice(command.length + 1);
-          return await this.handler.target[method](message);
+          let placeholder: Message<boolean>;
+          if (options.placeholder) {
+            placeholder = await message.channel.send(options.placeholder);
+          }
+          const args = this.handleArgs(message, method);
+          let success = false;
+          try {
+            const hasPayload = await this.handler.target[method](...args);
+            success = true;
+            if (hasPayload?.toPayload) {
+              placeholder.edit(hasPayload.toPayload());
+            } else {
+              await placeholder.delete();
+            }
+          } finally {
+            if (!success) {
+              await placeholder.delete();
+            }
+          }
         }
       }
     }
@@ -46,17 +81,21 @@ class GroupContext {
 export class DiscordEventEmitter implements OnModuleInit {
   private client: DiscordClient;
 
-  constructor(private readonly options: DiscordOptions) {
+  constructor(
+    private readonly options: DiscordOptions,
+    private readonly logger: ConsoleLogger,
+  ) {
     this.client = new DiscordClient({
       intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
     });
   }
   onModuleInit() {
+    this.logger.setContext('DiscordEventEmitter');
     this.init();
   }
   async init() {
     this.client.on('ready', () => {
-      console.log(`Logged in as ${this.client.user.tag}!`);
+      this.logger.log(`Logged in as ${this.client.user.tag}!`);
     });
     await this.client.login(this.options.token);
     this.onMessage();

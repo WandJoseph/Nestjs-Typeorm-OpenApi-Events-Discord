@@ -7,6 +7,7 @@ export class CommandOptions {
   name?: string;
   aliases?: string[];
   description?: string;
+  placeholder?: string;
 }
 
 export class DiscordCommandMetadataHandler {
